@@ -74,8 +74,16 @@
     <input id="titleInput" type="text" placeholder="Matrix Title" value="Interactive 5×5 Matrix" style="width:200px;" />
     <label>Size:
       <select id="sizeSelect">
-        ${[...Array(8)].map((_,i)=>`<option value="${i+3}">${i+3}×${i+3}</option>`).join("")}
-      </select>
+  <option value="3">3×3</option>
+  <option value="4">4×4</option>
+  <option value="5" selected>5×5</option>
+  <option value="6">6×6</option>
+  <option value="7">7×7</option>
+  <option value="8">8×8</option>
+  <option value="9">9×9</option>
+  <option value="10">10×10</option>
+</select>
+
     </label>
     <button id="applySettings">Apply Settings</button>
     <button id="saveBtn">💾 Save State</button>
