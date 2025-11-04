@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Interactive Matrix</title>
+<style>
+  body {
+    font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    background: #f9f9f9;
+  }
+  .title {
+    font-weight: 700;
+    font-size: clamp(20px, 2vw, 28px);
+    background: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+  }
+  .controls { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .container {
+    display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; align-items: flex-start;
+  }
+  .matrix-card, .palette {
+    background: white;
+    padding: 12px;
+    border-radius: 8px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+  }
+  .matrix { display: grid; gap: 6px; }
+  .cell {
+    border: 3px solid #000;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: clamp(16px, 5vw, 48px);
+    background: #fff;
+    aspect-ratio: 1/1;
+    cursor: pointer;
+    transition: 0.15s ease;
+  }
+  .cell.selected { outline: 4px solid rgba(0,120,215,0.3); }
+  .palette .row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .palette-item {
+    width: 50px; height: 50px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 2px solid rgba(0,0,0,0.1);
+    transition: 0.1s ease;
+  }
+  .palette-item:active { transform: scale(0.96); }
+  .palette-item.selected { outline: 3px solid rgba(0,0,0,0.2); }
+  button, select, input {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(0,0,0,0.2);
+    background: white;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+
+  <div class="controls">
+    <input id="titleInput" type="text" placeholder="Matrix Title" value="Interactive 5×5 Matrix" style="width:200px;" />
+    <label>Size:
+      <select id="sizeSelect">
+        ${[...Array(8)].map((_,i)=>`<option value="${i+3}">${i+3}×${i+3}</option>`).join("")}
+      </select>
+    </label>
+    <button id="applySettings">Apply Settings</button>
+    <button id="saveBtn">💾 Save State</button>
+    <button id="loadBtn">📂 Load Saved</button>
+    <button id="resetBtn">🔄 Reset</button>
+  </div>
+
+  <div id="pageTitle" class="title">Interactive 5×5 Matrix</div>
+
+  <div class="container">
+    <div class="matrix-card">
+      <div><strong>Matrix</strong> <small>(Click to select → Click code to apply → Double-click to clear)</small></div>
+      <div id="matrix" class="matrix"></div>
+    </div>
+
+    <div class="palette">
+      <strong>Codes</strong>
+      <div id="paletteRow" class="row"></div>
+      <small style="color:#555;">Replaced cells appear on light gray.</small>
+    </div>
+  </div>
+
+<script>
+const codeList = [
+  {code:"AA",color:"#FF0000"},{code:"BB",color:"#0000FF"},{code:"CC",color:"#008000"},
+  {code:"DD",color:"#FFA500"},{code:"EE",color:"#800080"},{code:"FF",color:"#00CED1"},
+  {code:"GG",color:"#A52A2A"},{code:"HH",color:"#000000"},{code:"II",color:"#808000"},
+  {code:"JJ",color:"#FFC0CB"},{code:"KK",color:"#DC143C"},{code:"LL",color:"#4682B4"},
+  {code:"MM",color:"#32CD32"},{code:"NN",color:"#FF4500"},{code:"OO",color:"#8A2BE2"},
+  {code:"PP",color:"#20B2AA"},{code:"QQ",color:"#2F4F4F"},{code:"RR",color:"#B8860B"},
+  {code:"SS",color:"#FF1493"},{code:"TT",color:"#708090"},{code:"UU",color:"#191970"},
+  {code:"VV",color:"#6B8E23"},{code:"WW",color:"#DAA520"},{code:"XX",color:"#FF6347"},
+  {code:"YY",color:"#40E0D0"}
+];
+let selectedCell = null, selectedPalette = null, originalValues = [];
+
+const matrixEl = document.getElementById("matrix");
+const paletteRow = document.getElementById("paletteRow");
+const titleInput = document.getElementById("titleInput");
+const pageTitle = document.getElementById("pageTitle");
+const sizeSelect = document.getElementById("sizeSelect");
+const applyBtn = document.getElementById("applySettings");
+const saveBtn = document.getElementById("saveBtn");
+const loadBtn = document.getElementById("loadBtn");
+const resetBtn = document.getElementById("resetBtn");
+
+// --- Init ---
+document.addEventListener("DOMContentLoaded", ()=>{
+  sizeSelect.value = 5;
+  createMatrix(5);
+  createPalette();
+  attachHandlers();
+});
+
+// --- Functions ---
+function createMatrix(n){
+  matrixEl.innerHTML = "";
+  matrixEl.style.gridTemplateColumns = `repeat(${n}, 1fr)`;
+  originalValues = [];
+  for (let i=1;i<=n*n;i++){
+    const cell = document.createElement("div");
+    cell.className = "cell placeholder";
+    cell.textContent = i;
+    cell.dataset.index = i-1;
+    originalValues.push(i);
+    cell.onclick = ()=>selectCell(cell);
+    cell.ondblclick = ()=>restoreCell(cell);
+    matrixEl.appendChild(cell);
+  }
+}
+
+function createPalette(){
+  paletteRow.innerHTML = "";
+  codeList.forEach(item=>{
+    const p=document.createElement("div");
+    p.className="palette-item";
+    p.textContent=item.code;
+    p.style.background=item.color;
+    p.style.color=getContrast(item.color);
+    p.onclick=()=>applyCode(item,p);
+    paletteRow.appendChild(p);
+  });
+}
+
+function selectCell(cell){
+  if(selectedCell) selectedCell.classList.remove("selected");
+  selectedCell = cell;
+  cell.classList.add("selected");
+}
+function restoreCell(cell){
+  const i=parseInt(cell.dataset.index);
+  cell.className="cell placeholder";
+  cell.textContent=originalValues[i];
+  cell.style.background="#fff";
+}
+function applyCode(item,paletteEl){
+  if(!selectedCell) return;
+  selectedCell.classList.remove("placeholder");
+  selectedCell.style.background="#eaeaea";
+  selectedCell.innerHTML=`<span style="color:${item.color};font-weight:700;">${item.code}</span>`;
+  if(selectedPalette) selectedPalette.classList.remove("selected");
+  paletteEl.classList.add("selected");
+  selectedPalette=paletteEl;
+}
+function getContrast(hex){
+  const c=hex.replace("#","");const r=parseInt(c.substr(0,2),16),g=parseInt(c.substr(2,2),16),b=parseInt(c.substr(4,2),16);
+  return (0.2126*r+0.7152*g+0.0722*b)>150?"#111":"#fff";
+}
+function attachHandlers(){
+  applyBtn.onclick=()=>{
+    const size=parseInt(sizeSelect.value);
+    const title=titleInput.value.trim()||"Interactive Matrix";
+    pageTitle.textContent=title;
+    createMatrix(size);
+  };
+  resetBtn.onclick=()=>{ const size=parseInt(sizeSelect.value); createMatrix(size); };
+  saveBtn.onclick=saveState;
+  loadBtn.onclick=loadState;
+}
+
+// --- Save / Load ---
+function saveState(){
+  const data=[...matrixEl.children].map(c=>c.innerText.trim());
+  const state={title:titleInput.value,size:parseInt(sizeSelect.value),matrix:data};
+  localStorage.setItem("matrixState",JSON.stringify(state));
+  alert("Matrix saved!");
+}
+function loadState(){
+  const state=JSON.parse(localStorage.getItem("matrixState")||"{}");
+  if(!state.matrix){alert("No saved state found.");return;}
+  titleInput.value=state.title;
+  pageTitle.textContent=state.title;
+  sizeSelect.value=state.size;
+  createMatrix(state.size);
+  const cells=[...matrixEl.children];
+  state.matrix.forEach((val,i)=>{
+    const cell=cells[i];
+    if(!cell)return;
+    if(/^[A-Z]{2}$/.test(val)){
+      const found=codeList.find(c=>c.code===val);
+      if(found){
+        cell.classList.remove("placeholder");
+        cell.style.background="#eaeaea";
+        cell.innerHTML=`<span style="color:${found.color};font-weight:700;">${found.code}</span>`;
+      }
+    } else {
+      cell.className="cell placeholder";
+      cell.textContent=val;
+      cell.style.background="#fff";
+    }
+  });
+  alert("Matrix loaded!");
+}
+</script>
+</body>
+</html>
+
