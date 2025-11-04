@@ -157,16 +157,39 @@ function createMatrix(n){
 
 function createPalette(){
   paletteRow.innerHTML = "";
-  codeList.forEach(item=>{
-    const p=document.createElement("div");
-    p.className="palette-item";
-    p.textContent=item.code;
-    p.style.background=item.color;
-    p.style.color=getContrast(item.color);
-    p.onclick=()=>applyCode(item,p);
-    paletteRow.appendChild(p);
+  codeList.forEach((item, index) => {
+    const wrapper = document.createElement("div");
+    wrapper.className = "palette-item";
+    wrapper.style.background = item.color;
+    wrapper.style.color = getContrast(item.color);
+
+    // Create editable text field
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = item.code;
+    input.maxLength = 2;
+    input.style.width = "40px";
+    input.style.textAlign = "center";
+    input.style.border = "none";
+    input.style.background = "transparent";
+    input.style.color = "inherit";
+    input.style.fontWeight = "700";
+    input.style.fontSize = "16px";
+    input.style.outline = "none";
+
+    // Update codeList when user edits initials
+    input.addEventListener("input", (e) => {
+      codeList[index].code = e.target.value.toUpperCase();
+    });
+
+    // Still apply the selected color/code when clicked
+    wrapper.onclick = () => applyCode(codeList[index], wrapper);
+
+    wrapper.appendChild(input);
+    paletteRow.appendChild(wrapper);
   });
 }
+
 
 function selectCell(cell){
   if(selectedCell) selectedCell.classList.remove("selected");
