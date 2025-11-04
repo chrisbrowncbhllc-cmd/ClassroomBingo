@@ -229,11 +229,17 @@ function attachHandlers(){
 
 // --- Save / Load ---
 function saveState(){
-  const data=[...matrixEl.children].map(c=>c.innerText.trim());
-  const state={title:titleInput.value,size:parseInt(sizeSelect.value),matrix:data};
-  localStorage.setItem("matrixState",JSON.stringify(state));
-  alert("Matrix saved!");
+  const data = [...matrixEl.children].map(c => c.innerText.trim());
+  const state = {
+    title: titleInput.value,
+    size: parseInt(sizeSelect.value),
+    matrix: data,
+    codes: codeList  // 💾 Save the full list of initials & colors
+  };
+  localStorage.setItem("matrixState", JSON.stringify(state));
+  alert("Matrix and initials saved!");
 }
+
 function loadState(){
   const state=JSON.parse(localStorage.getItem("matrixState")||"{}");
   if(!state.matrix){alert("No saved state found.");return;}
