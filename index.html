@@ -160,14 +160,14 @@ function createPalette(){
   codeList.forEach((item, index) => {
     const wrapper = document.createElement("div");
     wrapper.className = "palette-item";
-    wrapper.style.background = item.color;
-    wrapper.style.color = getContrast(item.color);
+    wrapper.style.background = item.color || "#ffffff"; // ensure color is restored
+    wrapper.style.color = getContrast(item.color || "#ffffff");
 
-    // Create editable text field
+    // Create editable text field for initials
     const input = document.createElement("input");
     input.type = "text";
     input.value = item.code;
-    input.maxLength = 3;
+    input.maxLength = 2;
     input.style.width = "40px";
     input.style.textAlign = "center";
     input.style.border = "none";
@@ -177,12 +177,12 @@ function createPalette(){
     input.style.fontSize = "16px";
     input.style.outline = "none";
 
-    // Update codeList when user edits initials
+    // Update initials when user edits
     input.addEventListener("input", (e) => {
       codeList[index].code = e.target.value.toUpperCase();
     });
 
-    // Still apply the selected color/code when clicked
+    // Keep color when applying code
     wrapper.onclick = () => applyCode(codeList[index], wrapper);
 
     wrapper.appendChild(input);
