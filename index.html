@@ -241,31 +241,44 @@ function saveState(){
 }
 
 function loadState(){
-  const state=JSON.parse(localStorage.getItem("matrixState")||"{}");
-  if(!state.matrix){alert("No saved state found.");return;}
-  titleInput.value=state.title;
-  pageTitle.textContent=state.title;
-  sizeSelect.value=state.size;
+  const state = JSON.parse(localStorage.getItem("matrixState") || "{}");
+  if (!state.matrix) {
+    alert("No saved state found.");
+    return;
+  }
+
+  titleInput.value = state.title;
+  pageTitle.textContent = state.title;
+  sizeSelect.value = state.size;
+
+  // 🔹 Restore custom initials if saved
+  if (state.codes && Array.isArray(state.codes)) {
+    codeList.splice(0, codeList.length, ...state.codes);
+  }
+
   createMatrix(state.size);
-  const cells=[...matrixEl.children];
-  state.matrix.forEach((val,i)=>{
-    const cell=cells[i];
-    if(!cell)return;
-    if(/^[A-Z]{2}$/.test(val)){
-      const found=codeList.find(c=>c.code===val);
-      if(found){
+  createPalette(); // recreate editable palette with restored initials
+
+  const cells = [...matrixEl.children];
+  state.matrix.forEach((val, i) => {
+    const cell = cells[i];
+    if (!cell) return;
+    if (/^[A-Z]{2}$/.test(val)) {
+      const found = codeList.find(c => c.code === val);
+      if (found) {
         cell.classList.remove("placeholder");
-        cell.style.background="#eaeaea";
-        cell.innerHTML=`<span style="color:${found.color};font-weight:700;">${found.code}</span>`;
+        cell.style.background = "#eaeaea";
+        cell.innerHTML = `<span style="color:${found.color};font-weight:700;">${found.code}</span>`;
       }
     } else {
-      cell.className="cell placeholder";
-      cell.textContent=val;
-      cell.style.background="#fff";
+      cell.className = "cell placeholder";
+      cell.textContent = val;
+      cell.style.background = "#fff";
     }
   });
-  alert("Matrix loaded!");
+  alert("Matrix and initials loaded!");
 }
+
 </script>
 </body>
 </html>
